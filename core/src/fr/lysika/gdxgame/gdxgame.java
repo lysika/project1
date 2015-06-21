@@ -23,5 +23,7 @@ public class gdxgame extends ApplicationAdapter {
 		batch.begin();
 		batch.draw(img, 0, 0);
 		batch.end();
+		
+		// Comment test github and git
 	}
 }
