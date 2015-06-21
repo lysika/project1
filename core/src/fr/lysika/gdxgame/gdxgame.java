@@ -1,5 +1,7 @@
 package fr.lysika.gdxgame;
 
+import java.util.Iterator;
+
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
@@ -25,6 +27,8 @@ public class gdxgame extends ApplicationAdapter {
 	public static final Integer GAME_WIDTH = 800;
 	public static final Integer GAME_HEIGHT = 480;
 	public static final Integer BUCKET_SPEED = 300;
+	public static final Integer RAIN_FORCE =  1000000000;
+	public static final Integer RAIN_SPEED =  200;
 	
 	private Texture dropImage;
 	private Texture bucketImage;
@@ -87,6 +91,10 @@ public class gdxgame extends ApplicationAdapter {
 		batch.setProjectionMatrix(camera.combined);
 		batch.begin();
 		batch.draw(bucketImage, bucket.x, bucket.y);
+		for(Rectangle raindrop: raindrops) {
+	      batch.draw(dropImage, raindrop.x, raindrop.y);
+	      
+		}
 		batch.end();
 		
 		// Manage bucket move
@@ -115,11 +123,27 @@ public class gdxgame extends ApplicationAdapter {
 		 // keep bucket in bound
 		 if(bucket.x < 0) bucket.x = 0;
 		 if(bucket.x > GAME_WIDTH - BUCKET_WIDTH) bucket.x = GAME_WIDTH - BUCKET_WIDTH;
-		
-	
+		 
+		 // Render the rain
+		 if(TimeUtils.nanoTime() - lastDropTime > RAIN_FORCE) spawnRaindrop();
+		 
+		  Iterator<Rectangle> iter = raindrops.iterator();
+		   while(iter.hasNext()) {
+		      Rectangle raindrop = iter.next();
+		      raindrop.y -= RAIN_SPEED * Gdx.graphics.getDeltaTime();
+		      if(raindrop.y + RAIN_DROP_HEIGHT < 0) iter.remove();
+			  // Rain overlaps bucket
+			  if(raindrop.overlaps(bucket)) {
+			     dropSound.play();
+			     iter.remove();
+			   }
+		   }
 	}
 	
-	   private void spawnRaindrop() {
+	/**
+	 * doing rain
+	 */
+	private void spawnRaindrop() {
 		      Rectangle raindrop = new Rectangle();
 		      raindrop.x = MathUtils.random(0, GAME_WIDTH-RAIN_DROP_WIDTH);
 		      raindrop.y = GAME_HEIGHT;
