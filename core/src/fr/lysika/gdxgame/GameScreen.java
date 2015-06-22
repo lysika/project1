@@ -10,17 +10,20 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
+
 import fr.lysika.gdxgame.ConstantGame;
 
 public class GameScreen implements Screen {
 
 	  final Gdxgame game;
-
+	  	Texture backgroundTexture;
+	  	Sprite backgroundSprite;
 	    Texture dropImage;
 	    Texture bucketImage;
 	    Sound dropSound;
@@ -30,17 +33,20 @@ public class GameScreen implements Screen {
 	    Array<Rectangle> raindrops;
 	    long lastDropTime;
 	    int dropsGathered;
+	    int dropsTotal;
 
 	    public GameScreen(final Gdxgame gam) {
+	    	
 	        this.game = gam;
 
 	        // load the images for the droplet and the bucket, 64x64 pixels each
-	        dropImage = new Texture(Gdx.files.internal("droplet.png"));
-	        bucketImage = new Texture(Gdx.files.internal("bucket.png"));
+	        dropImage = new Texture(Gdx.files.internal("cherry_64.png"));
+	        bucketImage = new Texture(Gdx.files.internal("basket.png"));
+	        loadTextures();
 
 	        // load the drop sound effect and the rain background "music"
-	        dropSound = Gdx.audio.newSound(Gdx.files.internal("waterdrop.wav"));
-	        rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
+	        dropSound = Gdx.audio.newSound(Gdx.files.internal("fruit.wav"));
+	        rainMusic = Gdx.audio.newMusic(Gdx.files.internal("ambient.mp3"));
 	        rainMusic.setLooping(true);
 
 	        // create the camera and the SpriteBatch
@@ -63,12 +69,13 @@ public class GameScreen implements Screen {
 
 	    private void spawnRaindrop() {
 	        Rectangle raindrop = new Rectangle();
-	        raindrop.x = MathUtils.random(0, ConstantGame.GAME_WIDTH - ConstantGame.RAIN_WIDTH);
+	        raindrop.x = MathUtils.random(0, ConstantGame.GAME_WIDTH - ConstantGame.CHERRY_WIDTH);
 	        raindrop.y = ConstantGame.GAME_HEIGHT;
-	        raindrop.width = ConstantGame.RAIN_WIDTH;
-	        raindrop.height = ConstantGame.RAIN_HEIGHT;
+	        raindrop.width = ConstantGame.CHERRY_WIDTH;
+	        raindrop.height = ConstantGame.CHERRY_HEIGHT;
 	        raindrops.add(raindrop);
 	        lastDropTime = TimeUtils.nanoTime();
+	        dropsTotal++;
 	    }
 
 	    @Override
@@ -77,7 +84,7 @@ public class GameScreen implements Screen {
 	        // arguments to glClearColor are the red, green
 	        // blue and alpha component in the range [0,1]
 	        // of the color to be used to clear the screen.
-	        Gdx.gl.glClearColor(0, 0, 0.2f, 1);
+	        Gdx.gl.glClearColor(50, 205, 50, 1);
 	        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
 	        // tell the camera to update its matrices.
@@ -90,7 +97,9 @@ public class GameScreen implements Screen {
 	        // begin a new batch and draw the bucket and
 	        // all drops
 	        game.batch.begin();
-	        game.font.draw(game.batch, "Drops Collected: " + dropsGathered, 0, ConstantGame.GAME_HEIGHT);
+	        renderBackground();
+	        game.font.draw(game.batch, "Cerises collectées: " + dropsGathered, 0, ConstantGame.GAME_HEIGHT);
+	        game.font.draw(game.batch, "Cerises tombées: " + dropsTotal, 0, ConstantGame.GAME_HEIGHT- 40);
 	        game.batch.draw(bucketImage, bucket.x, bucket.y);
 	        for (Rectangle raindrop : raindrops) {
 	            game.batch.draw(dropImage, raindrop.x, raindrop.y);
@@ -116,7 +125,7 @@ public class GameScreen implements Screen {
 	            bucket.x = ConstantGame.GAME_WIDTH - ConstantGame.BUCKET_WIDTH;
 
 	        // check if we need to create a new raindrop
-	        if (TimeUtils.nanoTime() - lastDropTime > ConstantGame.RAIN_FORCE)
+	        if (TimeUtils.nanoTime() - lastDropTime > ConstantGame.CHERRY_FORCE)
 	            spawnRaindrop();
 
 	        // move the raindrops, remove any that are beneath the bottom edge of
@@ -125,8 +134,8 @@ public class GameScreen implements Screen {
 	        Iterator<Rectangle> iter = raindrops.iterator();
 	        while (iter.hasNext()) {
 	            Rectangle raindrop = iter.next();
-	            raindrop.y -= ConstantGame.RAIN_SPEED * Gdx.graphics.getDeltaTime();
-	            if (raindrop.y + ConstantGame.RAIN_HEIGHT < 0)
+	            raindrop.y -= ConstantGame.CHERRY_SPEED * Gdx.graphics.getDeltaTime();
+	            if (raindrop.y + ConstantGame.CHERRY_HEIGHT < 0)
 	                iter.remove();
 	            if (raindrop.overlaps(bucket)) {
 	                dropsGathered++;
@@ -165,5 +174,14 @@ public class GameScreen implements Screen {
 	        bucketImage.dispose();
 	        dropSound.dispose();
 	        rainMusic.dispose();
+	    }
+	    
+	    private void loadTextures() {
+	        backgroundTexture = new Texture(Gdx.files.internal("forest.png"));
+	        backgroundSprite =new Sprite(backgroundTexture);
+	    }
+
+	    public void renderBackground() {
+	        backgroundSprite.draw(game.batch);
 	    }
 }
