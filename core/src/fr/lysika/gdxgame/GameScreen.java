@@ -1,6 +1,9 @@
 package fr.lysika.gdxgame;
 
+import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
+
+import javax.swing.text.StyledEditorKit.BoldAction;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
@@ -18,29 +21,43 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
 import fr.lysika.gdxgame.ConstantGame;
+import fr.lysika.gdxgame.recangle.RectangleFruit;
 
 public class GameScreen implements Screen {
 
-	  final Gdxgame game;
-	  	Texture backgroundTexture;
-	  	Sprite backgroundSprite;
-	    Texture dropImage;
-	    Texture bucketImage;
-	    Sound dropSound;
-	    Music rainMusic;
-	    OrthographicCamera camera;
-	    Rectangle bucket;
-	    Array<Rectangle> raindrops;
-	    long lastDropTime;
-	    int dropsGathered;
-	    int dropsTotal;
+	
+	final Gdxgame game;
+	// lower equal to upper force
+		double temps=0;
+	  	public static final int BANANA_BOLD = 2;
+	  	public static final int APPLE_BOLD = 3;
+	  	public static final int CHERRY_BOLD = 5;
+	  	public int fruitSpeed 		= 200;
+	  	public int fruitForce 		= 1000000000;
+	  	public int numberOfOut = 0;
+	  	private Texture backgroundTexture;
+	  	private Sprite backgroundSprite;
+	  	private Texture bananaImage;
+	  	private Texture appleImage;
+	  	private Texture cherryImage;
+	  	private Texture bucketImage;
+	  	private Sound dropSound;
+	  	private Music rainMusic;
+	  	private OrthographicCamera camera;
+	  	private Rectangle bucket;
+	  	private Array<RectangleFruit> raindrops;
+	  	private long lastDropTime;
+	  	private int dropsGathered;
+	  	private int dropsTotal;
 
 	    public GameScreen(final Gdxgame gam) {
 	    	
 	        this.game = gam;
 
 	        // load the images for the droplet and the bucket, 64x64 pixels each
-	        dropImage = new Texture(Gdx.files.internal("cherry_64.png"));
+	        bananaImage = new Texture(Gdx.files.internal("banana_64.png"));
+	        appleImage = new Texture(Gdx.files.internal("apple.png"));
+	        cherryImage = new Texture(Gdx.files.internal("cherry_64.png"));
 	        bucketImage = new Texture(Gdx.files.internal("basket.png"));
 	        loadTextures();
 
@@ -62,13 +79,13 @@ public class GameScreen implements Screen {
 	        bucket.height = ConstantGame.BUCKET_HEIGHT;
 
 	        // create the raindrops array and spawn the first raindrop
-	        raindrops = new Array<Rectangle>();
+	        raindrops = new Array<RectangleFruit>();
 	        spawnRaindrop();
 
 	    }
 
 	    private void spawnRaindrop() {
-	        Rectangle raindrop = new Rectangle();
+	        RectangleFruit raindrop = getFruit();
 	        raindrop.x = MathUtils.random(0, ConstantGame.GAME_WIDTH - ConstantGame.CHERRY_WIDTH);
 	        raindrop.y = ConstantGame.GAME_HEIGHT;
 	        raindrop.width = ConstantGame.CHERRY_WIDTH;
@@ -76,6 +93,31 @@ public class GameScreen implements Screen {
 	        raindrops.add(raindrop);
 	        lastDropTime = TimeUtils.nanoTime();
 	        dropsTotal++;
+	    }
+	    
+	    /**
+	     * Get the fruit
+	     * @return
+	     */
+	    private RectangleFruit getFruit(){
+	    	RectangleFruit rectangle = new RectangleFruit();
+	        rectangle.x = MathUtils.random(0, ConstantGame.GAME_WIDTH - ConstantGame.CHERRY_WIDTH);
+	        rectangle.y = ConstantGame.GAME_HEIGHT;
+	        rectangle.width = ConstantGame.CHERRY_WIDTH;
+	        rectangle.height = ConstantGame.CHERRY_HEIGHT;
+	    	int number = MathUtils.random(0, BANANA_BOLD + APPLE_BOLD + CHERRY_BOLD);
+	    	
+	    	if (number <= BANANA_BOLD){
+	    		rectangle.setTexture(bananaImage);
+	    		rectangle.setPoint(20);
+	    	}else if (number <= APPLE_BOLD){
+	    		rectangle.setTexture(appleImage);
+	    		rectangle.setPoint(5);
+	    	}else{
+	    		rectangle.setTexture(cherryImage);
+	    		rectangle.setPoint(1);
+	    	}
+	    	return rectangle;
 	    }
 
 	    @Override
@@ -98,11 +140,13 @@ public class GameScreen implements Screen {
 	        // all drops
 	        game.batch.begin();
 	        renderBackground();
-	        game.font.draw(game.batch, "Cerises collectées: " + dropsGathered, 0, ConstantGame.GAME_HEIGHT);
-	        game.font.draw(game.batch, "Cerises tombées: " + dropsTotal, 0, ConstantGame.GAME_HEIGHT- 40);
+	        game.font.draw(game.batch, "Nombre de points: " + dropsGathered, 0, ConstantGame.GAME_HEIGHT);
+	        game.font.draw(game.batch, "temps: " + temps, 0, ConstantGame.GAME_HEIGHT- 40);
+	        game.font.draw(game.batch, "speed: " + fruitSpeed, 0, ConstantGame.GAME_HEIGHT- 60);
+	        game.font.draw(game.batch, "force: " + fruitForce, 0, ConstantGame.GAME_HEIGHT- 80);
 	        game.batch.draw(bucketImage, bucket.x, bucket.y);
-	        for (Rectangle raindrop : raindrops) {
-	            game.batch.draw(dropImage, raindrop.x, raindrop.y);
+	        for (RectangleFruit raindrop : raindrops) {
+	            game.batch.draw(raindrop.getTexture(), raindrop.x, raindrop.y);
 	        }
 	        game.batch.end();
 
@@ -125,27 +169,43 @@ public class GameScreen implements Screen {
 	            bucket.x = ConstantGame.GAME_WIDTH - ConstantGame.BUCKET_WIDTH;
 
 	        // check if we need to create a new raindrop
-	        if (TimeUtils.nanoTime() - lastDropTime > ConstantGame.CHERRY_FORCE)
+	        if (TimeUtils.nanoTime() - lastDropTime > fruitForce)
 	            spawnRaindrop();
 
 	        // move the raindrops, remove any that are beneath the bottom edge of
 	        // the screen or that hit the bucket. In the later case we increase the 
 	        // value our drops counter and add a sound effect.
-	        Iterator<Rectangle> iter = raindrops.iterator();
+	        Iterator<RectangleFruit> iter = raindrops.iterator();
 	        while (iter.hasNext()) {
-	            Rectangle raindrop = iter.next();
-	            raindrop.y -= ConstantGame.CHERRY_SPEED * Gdx.graphics.getDeltaTime();
-	            if (raindrop.y + ConstantGame.CHERRY_HEIGHT < 0)
+	        	RectangleFruit raindrop = iter.next();
+	            raindrop.y -= fruitSpeed * Gdx.graphics.getDeltaTime();
+	            if (raindrop.y + ConstantGame.CHERRY_HEIGHT < 0){
 	                iter.remove();
+	                numberOfOut++;
+	            }
+	            	
 	            if (raindrop.overlaps(bucket)) {
-	                dropsGathered++;
+	            	dropsGathered+=raindrop.getPoint();
 	                dropSound.play();
 	                iter.remove();
 	            }
 	        }
+	        
+	        manageNextRender();
 	    }
 
-	    @Override
+	    private void manageNextRender() {
+	    	Float delta = Gdx.graphics.getDeltaTime();
+	    	temps += delta;
+	    	if (temps > 3){
+	    		fruitSpeed = fruitSpeed + 10;
+	    		temps = 0;
+	    	}
+	    	
+	    	fruitForce = fruitForce - 200000;
+		}
+
+		@Override
 	    public void resize(int width, int height) {
 	    }
 
@@ -170,7 +230,7 @@ public class GameScreen implements Screen {
 
 	    @Override
 	    public void dispose() {
-	        dropImage.dispose();
+	        bananaImage.dispose();
 	        bucketImage.dispose();
 	        dropSound.dispose();
 	        rainMusic.dispose();
