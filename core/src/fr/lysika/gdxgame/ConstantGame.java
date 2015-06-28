@@ -9,9 +9,12 @@ public class ConstantGame {
 	public static final int BUCKET_FLOOR_GAP 	= 20;
 	public static final int CHERRY_HEIGHT 		= 64;
 	public static final int CHERRY_WIDTH 		= 64;
-	public static final int BUCKET_SPEED 		= 400;
-	public static final int END_LIMIT 		= 50;
+	public static final int HEART_HEIGHT 		= 8;
+	public static final int HEART_WIDTH 		= 8;
 	
+	public static final int BUCKET_SPEED 		= 600;
+	public static final int END_LIMIT 		= 50;
+	public static final int NUMBER_OF_LIFE = 15;
 	
 
 }

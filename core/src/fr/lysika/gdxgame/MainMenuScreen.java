@@ -9,8 +9,9 @@ public class MainMenuScreen implements Screen {
 
 	final Gdxgame game;
 
-	OrthographicCamera camera;
-
+	private OrthographicCamera camera;
+	private Integer lastPoint ;
+	private double temps = 0;
 	public MainMenuScreen(final Gdxgame gam) {
 		game = gam;
 
@@ -34,15 +35,26 @@ public class MainMenuScreen implements Screen {
 		game.batch.setProjectionMatrix(camera.combined);
 
 		game.batch.begin();
-		game.font.draw(game.batch, "Welcome to Drop!!! ", 100, 150);
-		game.font.draw(game.batch, "Tap anywhere to begin!", 100, 100);
+		if (lastPoint != null){
+			game.font.draw(game.batch, "Ton score est de "+ lastPoint, 100, ConstantGame.GAME_HEIGHT - 100);
+		}
+		game.font.draw(game.batch, "Appuyer sur Entree pour commencer ", 100, 100);
 		game.batch.end();
 
-		if (Gdx.input.isTouched()) {
-			game.setScreen(new GameScreen(game));
-			dispose();
-		}
+		Float time = Gdx.graphics.getDeltaTime();
+    	temps += time;
+    	if (temps > 1){
+    		if (Gdx.input.isTouched()) {
+    			game.setScreen(new GameScreen(game));
+    			dispose();
+    		}
+    	}
 
+
+	}
+
+	public void setLastPoint(Integer lastPoint) {
+		this.lastPoint = lastPoint;
 	}
 
 	@Override

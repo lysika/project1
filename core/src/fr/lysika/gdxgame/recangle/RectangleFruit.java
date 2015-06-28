@@ -26,6 +26,12 @@ public class RectangleFruit extends Rectangle{
 		super();
 	}
 	
+	public RectangleFruit(Texture texture){
+		super();
+		this.texture = texture;
+		
+	}
+	
 	public Texture getTexture() {
 		return texture;
 	}

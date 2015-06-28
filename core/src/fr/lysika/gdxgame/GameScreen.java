@@ -1,9 +1,6 @@
 package fr.lysika.gdxgame;
 
-import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
-
-import javax.swing.text.StyledEditorKit.BoldAction;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
@@ -20,20 +17,23 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
-import fr.lysika.gdxgame.ConstantGame;
 import fr.lysika.gdxgame.recangle.RectangleFruit;
 
 public class GameScreen implements Screen {
 
 	
-	final Gdxgame game;
-	// lower equal to upper force
+		final Gdxgame game;
+		// lower equal to upper force
 		double temps=0;
-	  	public static final int BANANA_BOLD = 2;
-	  	public static final int APPLE_BOLD = 3;
-	  	public static final int CHERRY_BOLD = 5;
-	  	public int fruitSpeed 		= 200;
-	  	public int fruitForce 		= 1000000000;
+		public static final int DIAMOND_BOLD = 1;
+		public static final int HEART_BOLD = 3;
+	  	public static final int BANANA_BOLD = 8;
+	  	public static final int APPLE_BOLD = 18;
+	  	public static final int CHERRY_BOLD = 38;
+	  	public static final int FRUIT_SPEED = 200;
+	  	public static final int FRUIT_BOLD = 1000000000;
+	  	public int fruitSpeed 		= FRUIT_SPEED;
+	  	public int fruitForce 		= FRUIT_BOLD;
 	  	public int numberOfOut = 0;
 	  	private Texture backgroundTexture;
 	  	private Sprite backgroundSprite;
@@ -41,30 +41,29 @@ public class GameScreen implements Screen {
 	  	private Texture appleImage;
 	  	private Texture cherryImage;
 	  	private Texture bucketImage;
+	  	private Texture diamondImage;
+	  	private Texture lifeImage;
 	  	private Sound dropSound;
-	  	private Music rainMusic;
+	  	private Music gameMusic;
 	  	private OrthographicCamera camera;
 	  	private Rectangle bucket;
-	  	private Array<RectangleFruit> raindrops;
+	  	private Array<RectangleFruit> fruitdrops;
 	  	private long lastDropTime;
-	  	private int dropsGathered;
-	  	private int dropsTotal;
-
+	  	private int points;
+	  	private Array<RectangleFruit> lifes = new Array<RectangleFruit>();;
+	  	private int nbLife = ConstantGame.NUMBER_OF_LIFE;
+	  	
+	  	
 	    public GameScreen(final Gdxgame gam) {
 	    	
 	        this.game = gam;
 
-	        // load the images for the droplet and the bucket, 64x64 pixels each
-	        bananaImage = new Texture(Gdx.files.internal("banana_64.png"));
-	        appleImage = new Texture(Gdx.files.internal("apple.png"));
-	        cherryImage = new Texture(Gdx.files.internal("cherry_64.png"));
-	        bucketImage = new Texture(Gdx.files.internal("basket.png"));
 	        loadTextures();
 
 	        // load the drop sound effect and the rain background "music"
 	        dropSound = Gdx.audio.newSound(Gdx.files.internal("fruit.wav"));
-	        rainMusic = Gdx.audio.newMusic(Gdx.files.internal("ambient.mp3"));
-	        rainMusic.setLooping(true);
+	        gameMusic = Gdx.audio.newMusic(Gdx.files.internal("ambient.mp3"));
+	        gameMusic.setLooping(true);
 
 	        // create the camera and the SpriteBatch
 	        camera = new OrthographicCamera();
@@ -78,21 +77,23 @@ public class GameScreen implements Screen {
 	        bucket.width = ConstantGame.BUCKET_WIDTH;
 	        bucket.height = ConstantGame.BUCKET_HEIGHT;
 
-	        // create the raindrops array and spawn the first raindrop
-	        raindrops = new Array<RectangleFruit>();
-	        spawnRaindrop();
+	        // create the fruit array and spawn the first raindrop
+	        fruitdrops = new Array<RectangleFruit>();
+	        spawnFruitdrop();
+	        
+	        // create life line
+	        doLifeLine(nbLife);
 
 	    }
 
-	    private void spawnRaindrop() {
-	        RectangleFruit raindrop = getFruit();
-	        raindrop.x = MathUtils.random(0, ConstantGame.GAME_WIDTH - ConstantGame.CHERRY_WIDTH);
-	        raindrop.y = ConstantGame.GAME_HEIGHT;
-	        raindrop.width = ConstantGame.CHERRY_WIDTH;
-	        raindrop.height = ConstantGame.CHERRY_HEIGHT;
-	        raindrops.add(raindrop);
+	    private void spawnFruitdrop() {
+	        RectangleFruit fruitdrop = getFruit();
+	        fruitdrop.x = MathUtils.random(0, ConstantGame.GAME_WIDTH - ConstantGame.CHERRY_WIDTH);
+	        fruitdrop.y = ConstantGame.GAME_HEIGHT;
+	        fruitdrop.width = ConstantGame.CHERRY_WIDTH;
+	        fruitdrop.height = ConstantGame.CHERRY_HEIGHT;
+	        fruitdrops.add(fruitdrop);
 	        lastDropTime = TimeUtils.nanoTime();
-	        dropsTotal++;
 	    }
 	    
 	    /**
@@ -105,9 +106,16 @@ public class GameScreen implements Screen {
 	        rectangle.y = ConstantGame.GAME_HEIGHT;
 	        rectangle.width = ConstantGame.CHERRY_WIDTH;
 	        rectangle.height = ConstantGame.CHERRY_HEIGHT;
-	    	int number = MathUtils.random(0, BANANA_BOLD + APPLE_BOLD + CHERRY_BOLD);
-	    	
-	    	if (number <= BANANA_BOLD){
+	    	int number = MathUtils.random(0, DIAMOND_BOLD + HEART_BOLD +BANANA_BOLD + APPLE_BOLD + CHERRY_BOLD);
+	    	if (number <= DIAMOND_BOLD){
+	    		rectangle.setTexture(diamondImage);
+	    		rectangle.setPoint(100);
+	    	}
+	    	else if (number <= HEART_BOLD){
+	    		rectangle.setTexture(lifeImage);
+	    		rectangle.setPoint(0);
+	    	}    	
+	    	else if (number <= BANANA_BOLD){
 	    		rectangle.setTexture(bananaImage);
 	    		rectangle.setPoint(20);
 	    	}else if (number <= APPLE_BOLD){
@@ -140,12 +148,17 @@ public class GameScreen implements Screen {
 	        // all drops
 	        game.batch.begin();
 	        renderBackground();
-	        game.font.draw(game.batch, "Nombre de points: " + dropsGathered, 0, ConstantGame.GAME_HEIGHT);
+	        doLifeLine(nbLife);
+	        for (RectangleFruit rec : lifes){
+	        	 game.batch.draw(rec.getTexture(), rec.x, rec.y);
+	        }
+	        
+	        game.font.draw(game.batch, "Nombre de points: " + points, 0, ConstantGame.GAME_HEIGHT);
 	        game.font.draw(game.batch, "temps: " + temps, 0, ConstantGame.GAME_HEIGHT- 40);
 	        game.font.draw(game.batch, "speed: " + fruitSpeed, 0, ConstantGame.GAME_HEIGHT- 60);
 	        game.font.draw(game.batch, "force: " + fruitForce, 0, ConstantGame.GAME_HEIGHT- 80);
 	        game.batch.draw(bucketImage, bucket.x, bucket.y);
-	        for (RectangleFruit raindrop : raindrops) {
+	        for (RectangleFruit raindrop : fruitdrops) {
 	            game.batch.draw(raindrop.getTexture(), raindrop.x, raindrop.y);
 	        }
 	        game.batch.end();
@@ -170,31 +183,51 @@ public class GameScreen implements Screen {
 
 	        // check if we need to create a new raindrop
 	        if (TimeUtils.nanoTime() - lastDropTime > fruitForce)
-	            spawnRaindrop();
+	            spawnFruitdrop();
 
 	        // move the raindrops, remove any that are beneath the bottom edge of
 	        // the screen or that hit the bucket. In the later case we increase the 
 	        // value our drops counter and add a sound effect.
-	        Iterator<RectangleFruit> iter = raindrops.iterator();
+	        Iterator<RectangleFruit> iter = fruitdrops.iterator();
 	        while (iter.hasNext()) {
 	        	RectangleFruit raindrop = iter.next();
 	            raindrop.y -= fruitSpeed * Gdx.graphics.getDeltaTime();
 	            if (raindrop.y + ConstantGame.CHERRY_HEIGHT < 0){
 	                iter.remove();
-	                numberOfOut++;
+	                nbLife--;
+	    	        if (nbLife < 0){
+	    	        	MainMenuScreen screen = new MainMenuScreen(game);
+	    	        	screen.setLastPoint(points);
+	    	        	game.setScreen(screen);
+	    				dispose();
+	    	        }	                
 	            }
 	            	
 	            if (raindrop.overlaps(bucket)) {
-	            	dropsGathered+=raindrop.getPoint();
+	            	points+=raindrop.getPoint();
 	                dropSound.play();
+	                
+	                if (raindrop.getTexture().equals(lifeImage)){
+	                	if (nbLife < ConstantGame.NUMBER_OF_LIFE){
+	                		nbLife++;
+	                	}
+	                }
+	                else if (raindrop.getTexture().equals(diamondImage)){
+	                	fruitSpeed = (int) (fruitSpeed * 0.8) ;
+	                	fruitForce = (int) (fruitForce * 1.8);
+	                	
+	                	fruitSpeed = (fruitSpeed < FRUIT_SPEED) ? FRUIT_SPEED : fruitSpeed;
+	                	fruitForce = (fruitForce > FRUIT_BOLD) ? FRUIT_BOLD : fruitForce;
+	                }
 	                iter.remove();
 	            }
 	        }
 	        
-	        manageNextRender();
+	        manageLevelUp();
+	        
 	    }
 
-	    private void manageNextRender() {
+	    private void manageLevelUp() {
 	    	Float delta = Gdx.graphics.getDeltaTime();
 	    	temps += delta;
 	    	if (temps > 3){
@@ -213,7 +246,7 @@ public class GameScreen implements Screen {
 	    public void show() {
 	        // start the playback of the background music
 	        // when the screen is shown
-	        rainMusic.play();
+	        gameMusic.play();
 	    }
 
 	    @Override
@@ -222,6 +255,7 @@ public class GameScreen implements Screen {
 
 	    @Override
 	    public void pause() {
+
 	    }
 
 	    @Override
@@ -232,13 +266,35 @@ public class GameScreen implements Screen {
 	    public void dispose() {
 	        bananaImage.dispose();
 	        bucketImage.dispose();
+	        cherryImage.dispose();
+	        lifeImage.dispose();
 	        dropSound.dispose();
-	        rainMusic.dispose();
+	        gameMusic.dispose();
 	    }
 	    
 	    private void loadTextures() {
+	        // load the images for the droplet and the bucket, 64x64 pixels each
+	        bananaImage = new Texture(Gdx.files.internal("banana_64.png"));
+	        appleImage = new Texture(Gdx.files.internal("apple.png"));
+	        diamondImage = new Texture(Gdx.files.internal("diamond_64.png"));
+	        lifeImage = new Texture(Gdx.files.internal("heart_64.png"));
+	        cherryImage = new Texture(Gdx.files.internal("cherry_64.png"));
+	        bucketImage = new Texture(Gdx.files.internal("basket.png"));
 	        backgroundTexture = new Texture(Gdx.files.internal("forest.png"));
 	        backgroundSprite =new Sprite(backgroundTexture);
+	        
+	    }
+	    
+	    private void doLifeLine(int nbLife){
+	        lifes.clear(); 
+	        for (int ii=0 ; ii<=nbLife-1;ii++){
+	        	RectangleFruit life = new RectangleFruit(lifeImage);
+	        	life.x = 0;
+	        	life.y = ConstantGame.GAME_HEIGHT - 100 - (ConstantGame.HEART_HEIGHT+5)*ii;
+	        	life.width = ConstantGame.HEART_WIDTH;
+	        	life.height = ConstantGame.HEART_HEIGHT;
+	        	lifes.add(life);
+	        }
 	    }
 
 	    public void renderBackground() {
