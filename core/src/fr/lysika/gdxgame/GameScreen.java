@@ -214,7 +214,7 @@ public class GameScreen implements Screen {
 	                }
 	                else if (raindrop.getTexture().equals(diamondImage)){
 	                	fruitSpeed = (int) (fruitSpeed * 0.8) ;
-	                	fruitForce = (int) (fruitForce * 1.8);
+	                	fruitForce = (int) (fruitForce * 1.3);
 	                	
 	                	fruitSpeed = (fruitSpeed < FRUIT_SPEED) ? FRUIT_SPEED : fruitSpeed;
 	                	fruitForce = (fruitForce > FRUIT_BOLD) ? FRUIT_BOLD : fruitForce;
@@ -231,7 +231,7 @@ public class GameScreen implements Screen {
 	    	Float delta = Gdx.graphics.getDeltaTime();
 	    	temps += delta;
 	    	if (temps > 3){
-	    		fruitSpeed = fruitSpeed + 10;
+	    		fruitSpeed = fruitSpeed + 12;
 	    		temps = 0;
 	    	}
 	    	
